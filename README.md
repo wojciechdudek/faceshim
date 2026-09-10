@@ -59,7 +59,8 @@ w compose `devices: [/dev/dri:/dev/dri]` i `ORT_PROVIDERS=OpenVINOExecutionProvi
 
 ## Wpięcie w stack
 
-1. `compose.example.yml` → do compose obok Double Take. Wolumen `/data` musi być trwały.
+1. `compose.example.yml` → do compose obok Double Take. `/data` to katalog na hoście, jak przy
+   pozostałych usługach — właściciel jest poprawiany automatycznie przy starcie.
 2. `doubletake.example.yml` → blok `detectors` w `config.yml` Double Take. **Zostaw CompreFace obok**
    na czas testów.
 3. Double Take → zakładka **Train** → **Sync**: wypycha istniejące zdjęcia treningowe do faceshim
@@ -78,6 +79,17 @@ od optyki i światła, więc te dwa punkty ustawia się raz, na własnych danych
    `SIM_LOW` tak, żeby obcy nie przekraczali 0.5. Typowo dla `buffalo_l`: domownicy 0.5–0.75,
    obcy ≤ 0.3.
 3. Progu w automatyzacji furtki (np. `> 90`) **nie obniżaj** – strój `SIM_*`, nie konsumenta.
+
+## Gdy coś nie działa
+
+- **Kontener wychodzi z `is not writable by uid 1000`** — zamontowany `/data` jest tylko do
+  odczytu, albo uruchomiłeś kontener z własnym `user:` na katalogu należącym do roota. Bez `user:`
+  entrypoint sam poprawia właściciela katalogu przy starcie (kontener startuje jako root wyłącznie
+  po to i zaraz zrzuca uprawnienia do `app`, uid 1000).
+- **Wszystko wraca jako `unknown`** — sprawdź `GET /`: pole `embeddings` musi być > 0. Jeśli 0,
+  Sync w Double Take nie doszedł (patrz wyżej) — powtórz go.
+- **Domownicy poniżej progu mimo wyraźnego `similarity`** — to kalibracja, nie rozpoznawanie;
+  sekcja wyżej.
 
 ## Ograniczenia
 

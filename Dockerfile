@@ -19,19 +19,20 @@ RUN python -c "from insightface.app import FaceAnalysis; \
 
 FROM python:3.11-slim
 ARG MODEL_NAME
-RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 libgomp1 \
+RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 libgomp1 gosu \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 app
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build --chown=app:app /root/.insightface /home/app/.insightface
 WORKDIR /app
-COPY --chown=app:app app.py selfcheck.py ./
+COPY --chown=app:app app.py selfcheck.py entrypoint.sh ./
 RUN mkdir -p /data && chown app:app /data
 ENV PATH=/opt/venv/bin:$PATH HOME=/home/app MODEL_NAME=${MODEL_NAME} DATA_DIR=/data \
     PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2
-USER app
+# No USER here: entrypoint.sh fixes ownership of a bind-mounted /data, then drops to `app`.
 VOLUME ["/data"]
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if b'true' in urllib.request.urlopen('http://127.0.0.1:5000/', timeout=4).read() else 1)"
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000", "--no-access-log"]

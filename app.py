@@ -81,9 +81,16 @@ class Store:
 
     def add(self, user: str, emb: np.ndarray) -> int:
         with self.lock:
-            self.users.setdefault(user, []).append(emb.astype(np.float32))
-            self._save()
-            return len(self.users[user])
+            embs = self.users.setdefault(user, [])
+            embs.append(emb.astype(np.float32))
+            try:
+                self._save()
+            except OSError:
+                embs.pop()  # keep memory and disk consistent: a failed write enrolls nobody
+                if not embs:
+                    del self.users[user]
+                raise
+            return len(embs)
 
     def delete(self, user: str) -> bool:
         with self.lock:
@@ -130,8 +137,22 @@ async def lifespan(_: FastAPI):
     t0 = time.time()
     engine = Engine()
     store = Store(DATA_DIR / "faces.json")
+    check_writable(DATA_DIR)
     log.info("model %s ready in %.1fs, providers=%s", MODEL_NAME, time.time() - t0, PROVIDERS)
     yield
+
+
+def check_writable(path: Path) -> None:
+    """Fail fast: a bind mount owned by root would otherwise break every register with a 500."""
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write-test"
+        probe.write_text("ok")
+        probe.unlink()
+    except OSError as e:
+        log.error("%s is not writable by uid %d (%s). On the host: chown -R %d:%d <mounted dir>, "
+                  "or use a named volume.", path, os.getuid(), e, os.getuid(), os.getgid())
+        raise SystemExit(1)
 
 
 app = FastAPI(title="faceshim", lifespan=lifespan)
@@ -163,7 +184,11 @@ async def register(image: UploadFile = File(...), userid: str = Form(...)):
     if not faces:
         return {"success": False, "error": "no face found"}
     face = faces[0]  # largest face in the picture is the one being enrolled
-    n = store.add(userid, face.normed_embedding)
+    try:
+        n = store.add(userid, face.normed_embedding)
+    except OSError as e:
+        log.error("register %s failed: cannot write %s: %s", userid, DATA_DIR, e)
+        return {"success": False, "error": f"cannot write {DATA_DIR}: {e}"}
     log.info("register %s: face %s det=%.2f (%d embeddings)", userid, bbox(face), face.det_score, n)
     return {"success": True, "message": "face added", "userid": userid, "embeddings": n, **bbox(face)}
 
