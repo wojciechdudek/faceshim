@@ -56,6 +56,11 @@ def main() -> int:
     assert health.get("success"), health
     print("health:", health)
 
+    # Leftovers from an aborted run would tie with the new user (identical embedding); clear them first.
+    for stale in [u for u in health.get("users", []) if u.startswith("selfcheck-")]:
+        post(f"{base}/delete", {"userid": stale})
+        print("removed stale user:", stale)
+
     reg = post(f"{base}/register", {"userid": user}, ("face.jpg", data))
     assert reg.get("success"), reg
     print("register:", reg)
