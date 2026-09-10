@@ -47,7 +47,7 @@ make build-local        # obraz na lokalną architekturę, tag :dev
 make run                # uruchamia go na :5002 (5000 na macOS zajmuje AirPlay) z wolumenem faceshim-data
 make selfcheck          # register -> recognize -> delete na zdjęciu testowym insightface
 
-make build IMAGE=ghcr.io/<owner>/faceshim TAG=0.1.1   # buildx linux/amd64 + push
+make build IMAGE=ghcr.io/<owner>/faceshim TAG=0.1.3   # buildx linux/amd64 + push
 ```
 
 Albo tag `vX.Y.Z` w repo — workflow `.github/workflows/publish.yml` zbuduje `linux/amd64`
