@@ -68,6 +68,21 @@ w compose `devices: [/dev/dri:/dev/dri]` i `ORT_PROVIDERS=OpenVINOExecutionProvi
 4. Zakładka **Matches** → przycisk odświeżenia na 10 starych zdarzeniach: Double Take pokaże wynik
    CompreFace i faceshim obok siebie.
 
+## Porównanie z CompreFace na wszystkich zapisanych zdarzeniach
+
+`evaluate.py` czyta bazę SQLite Double Take'a i jego zapisane obrazy, przepuszcza każdy przez faceshim
+i drukuje tabelę: co zapisał Double Take (np. `compreface wojtek 97.5`) obok wyniku faceshim, a na
+końcu rozkłady surowego podobieństwa dla domowników i obcych oraz sugestię `SIM_LOW` / `SIM_HIGH`.
+Na hoście, obok działającego kontenera:
+
+```bash
+docker run --rm --network container:faceshim -v /home/double-take:/dt:ro \
+    --entrypoint python ghcr.io/wojciechdudek/faceshim:0.1.3 evaluate.py --storage /dt
+```
+
+`--network container:faceshim` współdzieli sieć z serwisem, więc nie trzeba znać nazwy sieci
+Dockera ani wystawiać portu. `--limit N` ogranicza do N najnowszych wierszy.
+
 ## Kalibracja na własnej kamerze
 
 `confidence` liczy się liniowo między `SIM_LOW` (0 %) i `SIM_HIGH` (100 %). Skala ArcFace zależy

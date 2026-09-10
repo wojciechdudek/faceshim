@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 li
 COPY --from=build /opt/venv /opt/venv
 COPY --from=build --chown=app:app /root/.insightface /home/app/.insightface
 WORKDIR /app
-COPY --chown=app:app app.py selfcheck.py entrypoint.sh ./
+COPY --chown=app:app app.py selfcheck.py evaluate.py entrypoint.sh ./
 RUN mkdir -p /data && chown app:app /data
 ENV PATH=/opt/venv/bin:$PATH HOME=/home/app MODEL_NAME=${MODEL_NAME} DATA_DIR=/data \
     PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2

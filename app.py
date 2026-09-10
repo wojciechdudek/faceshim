@@ -19,6 +19,7 @@ import logging
 import os
 import threading
 import time
+import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -27,6 +28,7 @@ import cv2
 import numpy as np
 from fastapi import FastAPI, File, Form, UploadFile
 
+warnings.filterwarnings("ignore", category=FutureWarning, module="insightface")  # skimage API churn, harmless
 log = logging.getLogger("faceshim")
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 
