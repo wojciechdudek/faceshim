@@ -1,0 +1,8 @@
+.git
+.github
+data
+*.md
+Makefile
+compose.example.yml
+doubletake.example.yml
+__pycache__

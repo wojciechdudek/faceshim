@@ -1,0 +1,11 @@
+# Fragment config.yml Double Take. faceshim udaje DeepStacka, wiec siedzi pod kluczem `deepstack`.
+# Przez okres testow zostaw CompreFace obok - Double Take pokaze wynik obu przy tym samym zdarzeniu.
+detectors:
+  compreface:
+    url: http://compreface-fe
+    key: <api key>
+    timeout: 60
+  deepstack:
+    url: http://faceshim:5000
+    timeout: 20
+    opencv_face_required: true

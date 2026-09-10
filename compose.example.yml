@@ -1,0 +1,27 @@
+# Dolacz do stacka na hoscie Frigate (obok double-take). Double Take laczy sie po nazwie uslugi,
+# wiec port na zewnatrz nie jest potrzebny - odkomentuj tylko do recznych testow curl-em.
+services:
+  faceshim:
+    image: ghcr.io/wojciechdudek/faceshim:0.1.0
+    container_name: faceshim
+    restart: unless-stopped
+    environment:
+      - SIM_LOW=0.30          # podobienstwo kosinusowe -> 0 %
+      - SIM_HIGH=0.70         # podobienstwo kosinusowe -> 100 %
+      - MIN_CONFIDENCE=0.20   # ponizej: "unknown"
+      - MIN_FACE_PX=40
+      - OMP_NUM_THREADS=2
+      # iGPU Intela (obraz zbudowany z ORT_PACKAGE=onnxruntime-openvino):
+      # - ORT_PROVIDERS=OpenVINOExecutionProvider,CPUExecutionProvider
+    volumes:
+      - /home/faceshim:/data
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # ports:
+    #   - "5002:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if b'true' in urllib.request.urlopen('http://127.0.0.1:5000/', timeout=4).read() else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
