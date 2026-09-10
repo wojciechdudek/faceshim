@@ -42,8 +42,9 @@ SIM_HIGH = float(os.getenv("SIM_HIGH", "0.70"))
 MIN_CONFIDENCE = float(os.getenv("MIN_CONFIDENCE", "0.20"))
 MIN_FACE_PX = int(os.getenv("MIN_FACE_PX", "40"))
 # Tightly cropped portraits (a head filling the frame, hair cut off) make SCRFD miss or doubt the
-# face. Below this det_score the image is padded with a neutral border and detected again.
-PAD_RETRY_BELOW = float(os.getenv("PAD_RETRY_BELOW", "0.80"))
+# face. Enrolment always tries a padded copy as well and keeps the better detection; recognition
+# only does so below this det_score, so ordinary camera frames are not detected twice.
+PAD_RETRY_BELOW = float(os.getenv("PAD_RETRY_BELOW", "0.70"))
 PAD_FRACTION = float(os.getenv("PAD_FRACTION", "0.5"))
 MAX_FACES = int(os.getenv("MAX_FACES", "5"))
 DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
@@ -132,9 +133,9 @@ class Engine:
         faces.sort(key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]), reverse=True)
         return faces
 
-    def faces(self, img: np.ndarray):
+    def faces(self, img: np.ndarray, retry_below: float = PAD_RETRY_BELOW):
         faces = self._detect(img)
-        if PAD_FRACTION > 0 and (not faces or faces[0].det_score < PAD_RETRY_BELOW):
+        if PAD_FRACTION > 0 and (not faces or faces[0].det_score < retry_below):
             pad = int(PAD_FRACTION * max(img.shape[:2]))
             padded = cv2.copyMakeBorder(img, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(114, 114, 114))
             retry = self._detect(padded)
@@ -200,7 +201,7 @@ async def register(image: UploadFile = File(...), userid: str = Form(...)):
     img = decode(await image.read())
     if img is None:
         return {"success": False, "error": "invalid image"}
-    faces = await asyncio.to_thread(engine.faces, img)
+    faces = await asyncio.to_thread(engine.faces, img, 1.0)  # enrolment: always try the padded copy too
     if not faces:
         return {"success": False, "error": "no face found"}
     face = faces[0]  # largest face in the picture is the one being enrolled

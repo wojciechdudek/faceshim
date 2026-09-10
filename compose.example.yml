@@ -2,7 +2,7 @@
 # wiec port na zewnatrz nie jest potrzebny - odkomentuj tylko do recznych testow curl-em.
 services:
   faceshim:
-    image: ghcr.io/wojciechdudek/faceshim:0.1.4
+    image: ghcr.io/wojciechdudek/faceshim:0.1.5
     container_name: faceshim
     restart: unless-stopped
     environment:
