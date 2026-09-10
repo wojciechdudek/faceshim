@@ -33,6 +33,8 @@ wyłącznie do strojenia (Double Take je ignoruje).
 | `SIM_HIGH` | `0.70` | podobieństwo kosinusowe odpowiadające 100 % |
 | `MIN_CONFIDENCE` | `0.20` | poniżej tej pewności twarz wraca jako `unknown` |
 | `MIN_FACE_PX` | `40` | mniejsze twarze (bok boxa w px) są pomijane |
+| `PAD_RETRY_BELOW` | `0.80` | gdy detektor nie znajdzie twarzy albo jest jej mniej pewny niż to, obraz dostaje margines i detekcja jest powtarzana — ratuje ciasno kadrowane portrety (głowa na cały kadr) |
+| `PAD_FRACTION` | `0.5` | szerokość tego marginesu jako ułamek dłuższego boku; `0` wyłącza ponowną detekcję |
 | `MAX_FACES` | `5` | ile twarzy z jednego obrazu zwracać (największe najpierw) |
 | `DET_SIZE` | `640` | rozmiar wejścia detektora; twarz do rozpoznania jest wycinana z oryginału |
 | `MODEL_NAME` | `buffalo_l` | pakiet modeli InsightFace zaszyty w obrazie (`buffalo_s` = lżejszy, mniej trafny) |
@@ -47,7 +49,7 @@ make build-local        # obraz na lokalną architekturę, tag :dev
 make run                # uruchamia go na :5002 (5000 na macOS zajmuje AirPlay) z wolumenem faceshim-data
 make selfcheck          # register -> recognize -> delete na zdjęciu testowym insightface
 
-make build IMAGE=ghcr.io/<owner>/faceshim TAG=0.1.3   # buildx linux/amd64 + push
+make build IMAGE=ghcr.io/<owner>/faceshim TAG=0.1.4   # buildx linux/amd64 + push
 ```
 
 Albo tag `vX.Y.Z` w repo — workflow `.github/workflows/publish.yml` zbuduje `linux/amd64`
@@ -77,7 +79,7 @@ Na hoście, obok działającego kontenera:
 
 ```bash
 docker run --rm --network container:faceshim -v /home/double-take:/dt:ro \
-    --entrypoint python ghcr.io/wojciechdudek/faceshim:0.1.3 evaluate.py --storage /dt
+    --entrypoint python ghcr.io/wojciechdudek/faceshim:0.1.4 evaluate.py --storage /dt
 ```
 
 `--network container:faceshim` współdzieli sieć z serwisem, więc nie trzeba znać nazwy sieci
@@ -103,6 +105,9 @@ od optyki i światła, więc te dwa punkty ustawia się raz, na własnych danych
   po to i zaraz zrzuca uprawnienia do `app`, uid 1000).
 - **Wszystko wraca jako `unknown`** — sprawdź `GET /`: pole `embeddings` musi być > 0. Jeśli 0,
   Sync w Double Take nie doszedł (patrz wyżej) — powtórz go.
+- **`no face found` przy rejestracji zdjęcia z wyraźną twarzą** — portret wypełniający kadr, z obciętą
+  górą głowy; od 0.1.4 obsługiwane automatycznie (`PAD_RETRY_BELOW`). Zdjęcia zarejestrowane starszą
+  wersją warto zarejestrować ponownie: usuń `faces.json`, zrestartuj, w Double Take zrób Sync.
 - **Domownicy poniżej progu mimo wyraźnego `similarity`** — to kalibracja, nie rozpoznawanie;
   sekcja wyżej.
 

@@ -7,7 +7,7 @@ and raw cosine similarity. Ends with per-person quantiles and a suggested SIM_LO
 Run on the Docker host (shares faceshim's network namespace, so no port or network name needed):
 
     docker run --rm --network container:faceshim -v /home/double-take:/dt:ro \\
-        --entrypoint python ghcr.io/wojciechdudek/faceshim:0.1.3 evaluate.py --storage /dt
+        --entrypoint python ghcr.io/wojciechdudek/faceshim:0.1.4 evaluate.py --storage /dt
 
 Ground truth is whatever Double Take stored from the *other* detectors (e.g. CompreFace): rows
 with a match are "known:<name>", rows without one are "unknown". Rows from faceshim itself

@@ -41,6 +41,10 @@ SIM_HIGH = float(os.getenv("SIM_HIGH", "0.70"))
 # Below this calibrated confidence a face is reported as "unknown".
 MIN_CONFIDENCE = float(os.getenv("MIN_CONFIDENCE", "0.20"))
 MIN_FACE_PX = int(os.getenv("MIN_FACE_PX", "40"))
+# Tightly cropped portraits (a head filling the frame, hair cut off) make SCRFD miss or doubt the
+# face. Below this det_score the image is padded with a neutral border and detected again.
+PAD_RETRY_BELOW = float(os.getenv("PAD_RETRY_BELOW", "0.80"))
+PAD_FRACTION = float(os.getenv("PAD_FRACTION", "0.5"))
 MAX_FACES = int(os.getenv("MAX_FACES", "5"))
 DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
 PROVIDERS = [p.strip() for p in os.getenv("ORT_PROVIDERS", "CPUExecutionProvider").split(",") if p.strip()]
@@ -121,11 +125,25 @@ class Engine:
         self.app.prepare(ctx_id=-1 if PROVIDERS == ["CPUExecutionProvider"] else 0, det_size=(DET_SIZE, DET_SIZE))
         self.lock = threading.Lock()
 
-    def faces(self, img: np.ndarray):
+    def _detect(self, img: np.ndarray):
         with self.lock:
             faces = self.app.get(img)
         faces = [f for f in faces if (f.bbox[2] - f.bbox[0]) >= MIN_FACE_PX and (f.bbox[3] - f.bbox[1]) >= MIN_FACE_PX]
         faces.sort(key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]), reverse=True)
+        return faces
+
+    def faces(self, img: np.ndarray):
+        faces = self._detect(img)
+        if PAD_FRACTION > 0 and (not faces or faces[0].det_score < PAD_RETRY_BELOW):
+            pad = int(PAD_FRACTION * max(img.shape[:2]))
+            padded = cv2.copyMakeBorder(img, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(114, 114, 114))
+            retry = self._detect(padded)
+            if retry and (not faces or retry[0].det_score > faces[0].det_score):
+                for f in retry:  # embeddings were computed on the padded image; only coordinates move back
+                    f.bbox = f.bbox - pad
+                    f.kps = f.kps - pad
+                log.info("padded retry: det %.2f -> %.2f", faces[0].det_score if faces else 0.0, retry[0].det_score)
+                faces = retry
         return faces[:MAX_FACES]
 
 
