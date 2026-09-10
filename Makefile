@@ -1,5 +1,5 @@
 IMAGE ?= ghcr.io/wojciechdudek/faceshim
-TAG   ?= 0.1.0
+TAG   ?= 0.1.1
 PLATFORM ?= linux/amd64
 
 .PHONY: build build-local push run selfcheck logs

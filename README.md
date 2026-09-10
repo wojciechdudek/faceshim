@@ -47,11 +47,11 @@ make build-local        # obraz na lokalną architekturę, tag :dev
 make run                # uruchamia go na :5002 (5000 na macOS zajmuje AirPlay) z wolumenem faceshim-data
 make selfcheck          # register -> recognize -> delete na zdjęciu testowym insightface
 
-make build IMAGE=ghcr.io/<owner>/faceshim TAG=0.1.0   # buildx linux/amd64 + push
+make build IMAGE=ghcr.io/<owner>/faceshim TAG=0.1.1   # buildx linux/amd64 + push
 ```
 
 Albo tag `v0.1.0` w repo — workflow `.github/workflows/publish.yml` zbuduje `linux/amd64`
-i wypchnie do `ghcr.io/<owner>/faceshim:0.1.0` oraz `:latest`. Modele są pobierane **w trakcie
+i wypchnie do `ghcr.io/<owner>/faceshim:0.1.1` oraz `:latest`. Modele są pobierane **w trakcie
 builda** i zaszywane w obrazie; kontener w runtime nie sięga do sieci.
 
 Wariant na iGPU Intela: `docker buildx build --build-arg ORT_PACKAGE=onnxruntime-openvino==1.29.0 ...`,
